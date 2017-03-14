@@ -1,0 +1,155 @@
+﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+
+namespace MagicParser
+{
+    public partial class MainWindow : Form
+    {
+        public MainWindow()
+        {
+            InitializeComponent();
+        }
+
+        #region Private variables
+
+        private string fileName = "";
+        private bool changed = false;
+
+        #endregion
+
+        #region Private methods
+
+        private bool checkChanges() // в случае наличия изменений предлагает сохранить файл и возвращает true; если была нажата "отмена", возвращает false
+        {
+            if (changed)
+            {
+                DialogResult answer = MessageBox.Show(this, "Желаете ли вы сохранить изменения?", "Сохранение", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question, MessageBoxDefaultButton.Button1);
+
+                switch (answer)
+                {
+                    case DialogResult.Yes:
+                        Save();
+                        return true;
+                    case DialogResult.Cancel:
+                        return false;
+                }
+            }
+            return true;
+        }
+        
+        private void Write()
+        {
+            StreamWriter sw = new StreamWriter(fileName, false);
+            sw.Write(textBoxInput.Text);
+            changed = false;
+            sw.Close();
+        }
+
+        private void SaveAs()
+        {
+            if (saveFileDialog.ShowDialog() == DialogResult.OK)
+            {
+                fileName = saveFileDialog.FileName;
+                Write();
+            }
+        }
+
+        private void Save()
+        {
+            if (fileName == "")
+            {
+                SaveAs();
+            }
+            else
+            {
+                Write();
+            }
+        }
+
+        private void Open()
+        {
+            if (checkChanges())
+            {
+                if (openFileDialog.ShowDialog() == DialogResult.OK)
+                {
+                    fileName = openFileDialog.FileName;
+                    StreamReader sr = new StreamReader(fileName);
+                    textBoxInput.Text = sr.ReadToEnd();
+                    changed = false;
+                    sr.Close();
+                }
+            }
+        }
+
+        private void New()
+        {
+            if (checkChanges())
+            {
+                fileName = "";
+                textBoxInput.Text = "";
+            }
+        }
+
+        #endregion
+
+        #region Events
+
+        private void textBoxInput_TextChanged(object sender, EventArgs e)
+        {
+            textBoxOutput.Text = textBoxInput.Text;
+            if (changed == false) { changed = true; }
+        }
+
+        private void новыйToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            New();
+        }
+
+        private void открытьToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            Open();
+        }
+
+        private void сохранитьToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            Save();
+        }
+
+        private void сохранитьКакToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            SaveAs();
+        }
+
+        private void MainWindow_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            if (!checkChanges())
+            {
+                e.Cancel = true;
+            }
+        }
+
+        #endregion
+
+        private void ButtonGenerate_Click(object sender, EventArgs e)
+        {
+            CodeParser.text = textBoxInput.Text;
+            string result = CodeParser.ParseText();
+            if (result == null)
+            {
+                MessageBox.Show(this, result, "Всё ок!", MessageBoxButtons.OK, MessageBoxIcon.Asterisk, MessageBoxDefaultButton.Button1);
+            } else
+            {
+                MessageBox.Show(this, result, "Упс!", MessageBoxButtons.OK, MessageBoxIcon.Error, MessageBoxDefaultButton.Button1);
+            }
+            //в результате будет либо код ошибки, либо пустая строка - значит, всё ок
+        }
+    }
+}
