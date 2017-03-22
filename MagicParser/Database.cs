@@ -73,6 +73,7 @@ namespace MagicParser
             public string comment;
             public string grade;
             public float price;
+            public int priority; //manual priority
             //public float cmc;
             //public float power;
             //public float toughness;

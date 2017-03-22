@@ -15,6 +15,7 @@ namespace MagicParser
         [STAThread]
         static void Main()
         {
+            Operator.Init();
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             Application.Run(new MainWindow());

@@ -141,15 +141,23 @@ namespace MagicParser
         private void ButtonGenerate_Click(object sender, EventArgs e)
         {
             CodeParser.text = textBoxInput.Text;
-            string result = CodeParser.ParseText();
-            if (result == null)
+            ParseCodeResult result = CodeParser.ParseText();
+            if (result.type == 2)
             {
-                MessageBox.Show(this, result, "Всё ок!", MessageBoxButtons.OK, MessageBoxIcon.Asterisk, MessageBoxDefaultButton.Button1);
+                if (result.boo)
+                {
+                    MessageBox.Show(this, "Успешно сгенерировано", "Всё ок!", MessageBoxButtons.OK, MessageBoxIcon.Asterisk, MessageBoxDefaultButton.Button1);
+                }
+            } else if (result.type == 2)
+            {
+                if (result.boo == false)
+                {
+                    MessageBox.Show(this, result.error.Message, "Упс!", MessageBoxButtons.OK, MessageBoxIcon.Error, MessageBoxDefaultButton.Button1);
+                }
             } else
             {
-                MessageBox.Show(this, result, "Упс!", MessageBoxButtons.OK, MessageBoxIcon.Error, MessageBoxDefaultButton.Button1);
+                MessageBox.Show(this, "Произошла какая-то неведомая ошибка.", "Упс!", MessageBoxButtons.OK, MessageBoxIcon.Error, MessageBoxDefaultButton.Button1);
             }
-            //в результате будет либо код ошибки, либо пустая строка - значит, всё ок
         }
     }
 }

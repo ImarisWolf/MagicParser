@@ -1,1 +1,83 @@
 Исправить баг с японскими картами
+допили приоритеты
+допили возможность переопределить слова операторов
+сортировка по сетам - прописать даты сетов
+
+ПРИ ДОБАВЛЕНИИ НОВЫХ ПОЛЕЙ В ENTRY НЕОБХОДИМО ДОБАВИТЬ НОВЫЕ КЕЙСЫ В СВИТЧ В OperatorVar.Execute()
+
+ПРИ ДОБАВЛЕНИИ НОВЫХ ОПЕРАТОРОВ НЕОБХОДИМО ДОБАВИТЬ ИХ ИНИЦИАЛИЗАЦИЮ В Operator.Init()
+
+
+/*
+        public static bool Operate (Database db, string variable, string value, string oper)
+        {
+            List<Entry> filtered = new List<Entry>();
+            List<string> values = new List<string>();
+            while (value != null)
+            {
+                if (value.Contains("||"))
+                {
+                    values.Add(CodeParser.CutBeforeWith(ref value, "||").TrimStart().TrimEnd());
+                } else
+                {
+                    values.Add(value);
+                }
+            }
+            
+            foreach (Entry entry in db.cardList)
+            {
+                foreach (string val in values)
+                {
+                    try
+                    {
+                        string executedVariable = entry.GetType().GetField(variable).GetValue(entry).ToString();
+                        if ( //если = != has has not
+                            (oper == "=" && executedVariable.ToLower() == value.ToLower()) ||
+                            (oper == "!=" && executedVariable.ToLower() != value.ToLower()) ||
+                            (oper == "has" && executedVariable.ToLower().Contains(value.ToLower())) ||
+                            (oper == "has not" && !executedVariable.ToLower().Contains(value.ToLower()))
+                            )
+                        {
+                            filtered.Add(entry);
+                        }
+                        else if (oper == ">" || oper == "<" || oper == ">=" || oper == "<=")
+                        {
+                            float convertedVariable;
+                            float.TryParse(executedVariable, out convertedVariable);
+                            float convertedValue;
+                            float.TryParse(value, out convertedValue);
+                            if ( // > < >= <=
+                                (oper == ">" && convertedVariable > convertedValue) ||
+                                (oper == ">=" && convertedVariable >= convertedValue) ||
+                                (oper == "<" && convertedVariable < convertedValue) ||
+                                (oper == "<=" && convertedVariable <= convertedValue)
+                                )
+                            {
+                                filtered.Add(entry);
+                            }
+                        }
+
+                    }
+                    catch
+                    {
+                        return false;
+                    }
+                }
+
+            }
+            db.cardList = filtered;
+            return true;
+        }
+        */
+
+        /*
+        public static bool IfCondition (Database db, string condition, string ifTrue, string ifFalse)
+        {
+            //надо написать метод, которым парсится строка до запятой и отправляется на вход Operate()!
+            //разбираем condition тем же методом, что любые операторы, но не вызываем Operate();
+            //разбираем ifTrue и ifFalse тем же методом, что и любые операторы, вызываем Operate();
+            //в Operate необходимо добавить на вход опционально условие, которым будет являться condition, и оно будет && ко всем другим условиям в случае наличия;
+
+            return true;
+        }
+        */
