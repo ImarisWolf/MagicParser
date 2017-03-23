@@ -183,6 +183,7 @@ namespace MagicParser
                 foreach (Entry entry in temp)
                 {
                     ParseCodeResult result = CodeParser.Operate(entry, expression);
+                    if (result.type == 1) return result;
                     if (result.type == 2)
                     {
                         if (!result.boo)
@@ -223,27 +224,93 @@ namespace MagicParser
                 return DealWithBrackets(entry, input);
             }
             //иначе ищем самый приоритетный оператор в диапазонах
-            return FindOperator(entry, input, ranges); //проверяем на наличие операторов ВНУТРИ РАНЖЕЙ в порядке приоритета
+            return FindOperator(entry, input); //проверяем на наличие операторов ВНУТРИ РАНЖЕЙ в порядке приоритета
         }
 
         //Считывает кавычки в инпуте, если ошибка с кавычками - возвращает ошибку,
         //иначе переходим к поиску скобок, а если их нет - ищем операторы.
-        private static ParseCodeResult DealWithQuotes(Entry entry, string input)
+        //Альтернативное назначение - используется методом OperatorQuote.Execute(), чтобы проверить правильность кавычек (инпут целиком должен содержаться в кавычках).
+        private static ParseCodeResult DealWithQuotes(Entry entry, string input, bool checkQuotes = false)
         {
             string quote_word = OperatorQuote.GetInstance().Word;
+            string escapeCharacter = Operator.escapeCharacter;
             bool quotesAreOpened = false;
+            bool escape = false;
             int start = 0;
             List<int[]> ranges = new List<int[]>();
-            //Проходимся по каждой подстроке длиной в quote_word и ищем там quote_word
-            for (int i = 0; i < input.Length - quote_word.Length + 1; i++)
+            //Проходимся по каждой подстроке длиной в quote_word и ищем там символ экранирования или quote_word
+            for (int i = 0; i < input.Length - Math.Min(quote_word.Length,escapeCharacter.Length) + 1; i++)
             {
-                if (input.Substring(i, quote_word.Length).ToLower() == quote_word)
+                //Если строка экранирования уже была...
+                if (escape)
                 {
-                    if (quotesAreOpened)
+                    //если для строки экранирования есть место...
+                    if (i + escapeCharacter.Length < input.Length)
                     {
-                        ranges.Add(new int[] { start, i });
-                        quotesAreOpened = false;
-                    } else { start = i; }
+                        //если это строка экранирования - 
+                        if (input.Substring(i, escapeCharacter.Length).ToLower() == escapeCharacter)
+                        {
+                            //то сдвигаем i так, чтобы в следующий раз начать с символа, который идёт за строкой экранирования.
+                            i += escapeCharacter.Length - 1;
+                            escape = false;
+                        }
+                    }
+                    //если для строки экранирования было место, но это не была строка экранирования (escape не поменялся), а для строки кавычки есть место...
+                    if (escape && i + quote_word.Length < input.Length)
+                    {
+                        //если это строка кавычки - 
+                        if (input.Substring(i, quote_word.Length).ToLower() == quote_word)
+                        {
+                            //то сдвигаем i так, чтобы в следующий раз начать с символа, который идёт за строкой кавычки.
+                            i += quote_word.Length - 1;
+                            escape = false;
+                        }
+                        //иначе это не строка экранирования, не строка ошибки, а строка экранирования была - ей нечего экранировать, это ошибка
+                        else return new ParseCodeResult(new Error("Нельзя просто взять и экранировать что угодно. Экранируй либо символ (строку) экранирования, либо двойную кавычку.\n" + input));
+                    }
+                    //иначе это не строка экранирования, не строка ошибки, а строка экранирования была - ей нечего экранировать, это ошибка
+                    else return new ParseCodeResult(new Error("Нельзя просто взять и экранировать что угодно. Экранируй либо символ (строку) экранирования, либо двойную кавычку.\n" + input));
+                }
+                //Если строки экранирования ещё не было
+                else
+                {
+                    //если для строки экранирования есть место...
+                    if (i + escapeCharacter.Length <= input.Length)
+                    {
+                        //если это строка экранирования - 
+                        if (input.Substring(i, escapeCharacter.Length).ToLower() == escapeCharacter)
+                        {
+                            //то сдвигаем i так, чтобы в следующий раз начать с символа, который идёт за строкой экранирования.
+                            i += escapeCharacter.Length - 1;
+                            escape = true;
+                        }
+                    }
+                    //если для строки экранирования было место, но это не была строка экранирования (escape не поменялся), а для строки кавычки есть место...
+                    if (!escape && i + quote_word.Length <= input.Length)
+                    {
+                        //если это строка кавычки
+                        if (input.Substring(i, quote_word.Length).ToLower() == quote_word)
+                        {
+                            //если кавычки уже открыты - 
+                            if(quotesAreOpened)
+                            {
+                                //то добавляем диапазон, сдвигаем i так, чтобы в следующий раз начать с символа, который идёт за строкой кавычки, и закрываем кавычки.
+                                ranges.Add(new int[] { start, i });
+                                i += quote_word.Length - 1;
+                                quotesAreOpened = false;
+                            }
+                            //если кавычки закрыты - 
+                            else
+                            {
+                                //записываем начало, сдвигаем i так, чтобы в следующий раз начать с символа, который идёт за строкой кавычки.
+                                start = i;
+                                i += quote_word.Length - 1;
+                                quotesAreOpened = true;
+                            }
+                        }
+                        //иначе это не строка экранирования, не строка ошибки, а строка экранирования не было просто переходим в следующую итерацию
+                    }
+                    //иначе это не строка экранирования, не строка ошибки, а строка экранирования не было просто переходим в следующую итерацию
                 }
             }
 
@@ -252,42 +319,81 @@ namespace MagicParser
             {
                 return new ParseCodeResult(new Error("Тут явно что-то не так с кавычками:\n" + input));
             }
+
+            //если есть лишь один диапазон, который покрывает всю строку => он целиком в одних кавычках, а это оператор
+            if (ranges.Count() == 1 && ranges[0][0] == 0 && ranges[0][1] == input.Length - 1)
+            {
+                //если нужно проверить правильность одинарных кавычек - это делается здесь
+                if (checkQuotes) return new ParseCodeResult(input.Substring(1, input.Length - 2));
+                return FindOperator(entry, input);
+            }
+            //если кавычки не одинарные, а нужно было проверить правильность кавычек - возвращаем ошибку
+            if (checkQuotes) return new ParseCodeResult(new Error("Тут какие-то проблемы, вероятнее всего связанные с кавычками.\n" + input));
+
+            //в других случаях список диапазонов надо "перевернуть", чтобы найти те диапазоны, в которых можно и нужно искать операторы
+            List<int[]> rangesReversed = ReverseRange(ranges, input.Length);
+
+            //Теперь если хотя бы один доступный диапазон содержит скобку, нужно разобраться со скобками:
+            if (input.ToLower().Contains(OperatorOpenGroup.GetInstance().Word))
+            {
+                return DealWithBrackets(entry, input, rangesReversed);
+            }
+            //Иначе приступаем к поиску значений:
+            return FindOperator(entry, input, rangesReversed);
+
+        }
+
+        //То же, что и предыдущий метод, но публичный и предназначен только для проверки кавычек. Возвращает строку с раскрытыми кавычками.
+        public static ParseCodeResult CheckQuotes(Entry entry, string input)
+        {
+            return DealWithQuotes(entry, input, true);
         }
 
         //Считывает скобки в инпуте, еслии ошибка в скобках - возвращает ошибку, иначе перезапускает Operate с учётом посчитанных скобок
-        private static ParseCodeResult DealWithBrackets(Entry entry, string input)
+        private static ParseCodeResult DealWithBrackets(Entry entry, string input, List<int[]> ranges = null)
         {
             string groupOpen_word = OperatorOpenGroup.GetInstance().Word;
             string groupClose_word = OperatorCloseGroup.GetInstance().Word;
             //считываем скобки и делаем диапазоны, соответствующие самым внешним скобкам
             int openBracketQty = 0;
-            List<int[]> ranges = new List<int[]>();
+            List<int[]> newRanges = new List<int[]>();
+
+            //Если ranges не заданы, ищем по всей строке
+            if (ranges == null) { ranges = new List<int[]> { new int[] { 0, input.Length } }; }
+
+            //Дальше ищем в доступных ранжах
             int start = 0;
             for (int i = 0; i < input.Length - Math.Max(groupOpen_word.Length, groupClose_word.Length) + 1; i++)
             {
-                if (input.Substring(i, groupOpen_word.Length).ToLower() == groupOpen_word)
+                foreach (int[] range in ranges)
                 {
-                    openBracketQty++;
-                    if (openBracketQty == 1)
+                    if (i>= range[0] && i<= range[1])
                     {
-                        start = i;
+                        if (input.Substring(i, groupOpen_word.Length).ToLower() == groupOpen_word)
+                        {
+                            openBracketQty++;
+                            if (openBracketQty == 1)
+                            {
+                                start = i;
+                            }
+                            i += groupOpen_word.Length - 1;
+                        }
+                        else if (input.Substring(i, groupClose_word.Length) == groupClose_word)
+                        {
+                            openBracketQty--;
+                            if (openBracketQty == 0)
+                            {
+                                newRanges.Add(new int[] { start, i });
+                                start = 0;
+                            }
+                            //с количеством скобок что-то не так
+                            else if (openBracketQty < 0)
+                            {
+                                return new ParseCodeResult(new Error("Количество закрывающих скобок чутка зашкаливает.\n\"" + input + "\""));
+                            }
+                            i += groupOpen_word.Length - 1;
+                        }
                     }
-                    i += groupOpen_word.Length - 1;
-                }
-                else if (input.Substring(i, groupClose_word.Length) == groupClose_word)
-                {
-                    openBracketQty--;
-                    if (openBracketQty == 0)
-                    {
-                        ranges.Add(new int[] { start, i });
-                        start = 0;
-                    }
-                    //с количеством скобок что-то не так
-                    else if (openBracketQty < 0)
-                    {
-                        return new ParseCodeResult(new Error("Количество закрывающих скобок чутка зашкаливает.\n\"" + input + "\""));
-                    }
-                    i += groupOpen_word.Length - 1;
                 }
             }
             //с количеством скобок что-то не так
@@ -295,22 +401,60 @@ namespace MagicParser
             {
                 return new ParseCodeResult(new Error("Нужно МЕНЬШЕ открывающих скобок.\n\"" + input + "\\"));
             }
+
+            //далее возвращаем диапазон к пустому списку, если он был по всей строке;
+            if (ranges[0][0] == 0 && ranges[0][1] == input.Length)
+            {
+                ranges = new List<int[]>();
+            }
             //если есть лишь один диапазон, который покрывает всю строку => она целиком в одних скобках, надо их раскрыть
-            if (ranges.Count() == 1 && ranges[0][0] == 0 && ranges[0][1] == input.Length - 1)
+            if (newRanges.Count() == 1 && newRanges[0][0] == 0 && newRanges[0][1] == input.Length - 1)
             {
                 input = input.Substring(1, input.Length - 2);
                 return Operate(entry, input);
             }
-            //в других случаях список диапазонов надо "перевернуть", чтобы найти те диапазоны, в которых можно и нужно искать операторы
-            List<int[]> ranReversed = ReverseRange(ranges, input.Length);
+
+            //добавляем в старые диапазоны новые диапазоны и сортируем
+            //сперва перевернём обратно старые ранжи
+            ranges = ReverseRange(ranges, input.Length);
+            ranges.AddRange(newRanges);
+            //private delegate int Comparison<in T>(T x, T y);
+            ranges.Sort(delegate (int[] x, int[] y) { return CompareRanges(x, y); });
+
+            //далее список диапазонов надо "перевернуть", чтобы найти те диапазоны, в которых можно и нужно искать операторы
+            List<int[]> rangesReversed = ReverseRange(ranges, input.Length);
 
             //Продолжаем искать операторы, теперь указаны диапазоны, где их следует искать
-            return Operate(entry, input, ranReversed);
+            return FindOperator(entry, input, rangesReversed);
+        }
+
+        //Сравнение двух диапазонов (для сортировки)
+        private static int CompareRanges(int[] x, int[] y)
+        {
+            if (x == null)
+            {
+                if (y == null) return 0;
+                else return -1;
+            }
+            else
+            {
+                if (y == null) return 1;
+
+
+
+                else
+                {
+                    if (x[0] < y[0]) return -1;
+                    else if (x[0] > y[0]) return 1;
+                    else return 0;
+                }
+            }
         }
 
         //На основе диапазонов, в которых нельзя искать оператор, делает диапазоны, в которых можно искать оператор.
         private static List<int[]> ReverseRange(List<int[]> ranges, int maxLength)
         {
+            maxLength -= 1;
             List<int[]> rangesReversed = new List<int[]>();
 
             //если диапазон начинается НЕ с начала строки, то добавляем один диапазон
@@ -323,8 +467,11 @@ namespace MagicParser
             {
                 rangesReversed.Add(new int[] { ranges[i][1] + 1, ranges[i + 1][0] - 1 });
             }
-            //добавляем в конец ранж
-            rangesReversed.Add(new int[] { ranges[ranges.Count() - 1][1] + 1, maxLength });
+            //добавляем в конец ранж, если он не находится в самом конце
+            if (ranges[ranges.Count() - 1][1] != maxLength)
+            {
+                rangesReversed.Add(new int[] { ranges[ranges.Count() - 1][1] + 1, maxLength });
+            }
 
             return rangesReversed;
         }
@@ -333,7 +480,7 @@ namespace MagicParser
         private static ParseCodeResult FindOperator(Entry entry, string input, List<int[]> ranges = null)
         {
             //Если ranges не заданы, ищем по всей строке
-            if (ranges == null) { ranges = new List<int[]>(); ranges.Add(new int[] { 0, input.Length }); }
+            if (ranges == null) { ranges = new List<int[]> { new int[] { 0, input.Length } }; }
 
             //Для каждой приоритезированной группы операторов будем проверять наличие оператора в доступных диапазонах
             for (int i = 1; i <= Operator.LastPriority; i++)
@@ -373,9 +520,9 @@ namespace MagicParser
                             }
                         }
                     }
-                    return new ParseCodeResult(new Error("Кажется, это синтаксическая ошибка.\n" + input));
                 }
             }
+            return new ParseCodeResult(new Error("Кажется, это синтаксическая ошибка.\n" + input));
             return new ParseCodeResult(new Error("Неизвестная ошибка о_о\n" + input));
         }
 

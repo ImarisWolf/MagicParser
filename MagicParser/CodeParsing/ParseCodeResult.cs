@@ -8,11 +8,11 @@ namespace MagicParser
 {
     public class ParseCodeResult
     {
-        public int type = 0; //Error - 1, bool - 2, float - 3, string - 4
-        public Error error;
-        public bool boo;
-        public float number;
-        public string str;
+        public int type { get; private set; } //Error - 1, bool - 2, float - 3, string - 4
+        public Error error { get; private set; }
+        public bool boo { get; private set; }
+        public float number { get; private set; }
+        public string str { get; private set; }
 
         public ParseCodeResult(Error error)
         {
@@ -26,12 +26,12 @@ namespace MagicParser
         }
         public ParseCodeResult(float fl)
         {
-            type = 4;
+            type = 3;
             this.number = fl;
         }
         public ParseCodeResult(string str)
         {
-            type = 1;
+            type = 4;
             this.str = str;
         }
     }

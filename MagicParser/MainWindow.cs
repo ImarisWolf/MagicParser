@@ -27,7 +27,7 @@ namespace MagicParser
 
         #region Private methods
 
-        private bool checkChanges() // в случае наличия изменений предлагает сохранить файл и возвращает true; если была нажата "отмена", возвращает false
+        private bool CheckChanges() // в случае наличия изменений предлагает сохранить файл и возвращает true; если была нажата "отмена", возвращает false
         {
             if (changed)
             {
@@ -76,7 +76,7 @@ namespace MagicParser
 
         private void Open()
         {
-            if (checkChanges())
+            if (CheckChanges())
             {
                 if (openFileDialog.ShowDialog() == DialogResult.OK)
                 {
@@ -91,7 +91,7 @@ namespace MagicParser
 
         private void New()
         {
-            if (checkChanges())
+            if (CheckChanges())
             {
                 fileName = "";
                 textBoxInput.Text = "";
@@ -102,35 +102,35 @@ namespace MagicParser
 
         #region Events
 
-        private void textBoxInput_TextChanged(object sender, EventArgs e)
+        private void TextBoxInput_TextChanged(object sender, EventArgs e)
         {
             textBoxOutput.Text = textBoxInput.Text;
             if (changed == false) { changed = true; }
         }
 
-        private void новыйToolStripMenuItem_Click(object sender, EventArgs e)
+        private void НовыйToolStripMenuItem_Click(object sender, EventArgs e)
         {
             New();
         }
 
-        private void открытьToolStripMenuItem_Click(object sender, EventArgs e)
+        private void ОткрытьToolStripMenuItem_Click(object sender, EventArgs e)
         {
             Open();
         }
 
-        private void сохранитьToolStripMenuItem_Click(object sender, EventArgs e)
+        private void СохранитьToolStripMenuItem_Click(object sender, EventArgs e)
         {
             Save();
         }
 
-        private void сохранитьКакToolStripMenuItem_Click(object sender, EventArgs e)
+        private void СохранитьКакToolStripMenuItem_Click(object sender, EventArgs e)
         {
             SaveAs();
         }
 
         private void MainWindow_FormClosing(object sender, FormClosingEventArgs e)
         {
-            if (!checkChanges())
+            if (!CheckChanges())
             {
                 e.Cancel = true;
             }
@@ -148,7 +148,7 @@ namespace MagicParser
                 {
                     MessageBox.Show(this, "Успешно сгенерировано", "Всё ок!", MessageBoxButtons.OK, MessageBoxIcon.Asterisk, MessageBoxDefaultButton.Button1);
                 }
-            } else if (result.type == 2)
+            } else if (result.type == 1)
             {
                 if (result.boo == false)
                 {

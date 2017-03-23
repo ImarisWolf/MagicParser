@@ -21,10 +21,9 @@ namespace MagicParser
         public abstract ParseCodeResult Execute(Entry entry, string input, int operatorIndex);
 
         //Список операторов.
-        public static List<Operator> list;
+        public static List<Operator> list = new List<Operator>();
 
         //Последний номер приоритета
-        private static int lastPriority;
         public static int LastPriority
         {
             get
@@ -43,7 +42,7 @@ namespace MagicParser
         {
             OperatorOpenGroup.GetInstance();
             OperatorCloseGroup.GetInstance();
-            OperatorAdd.GetInstance();
+            OperatorAnd.GetInstance();
             OperatorOr.GetInstance();
             OperatorEqual.GetInstance();
             OperatorNotEqual.GetInstance();
@@ -52,12 +51,13 @@ namespace MagicParser
             OperatorLess.GetInstance();
             OperatorLessOrEqual.GetInstance();
             OperatorContains.GetInstance();
-            OperatorDoesNotContains.GetInstance();
+            OperatorDoesNotContain.GetInstance();
             OperatorAdd.GetInstance();
             OperatorSubstract.GetInstance();
             OperatorMultiply.GetInstance();
             OperatorDivide.GetInstance();
             OperatorIf.GetInstance();
+            OperatorVar.GetInstance();
             OperatorQuote.GetInstance();
             OperatorNumber.GetInstance();
         }
@@ -212,7 +212,7 @@ namespace MagicParser
         #region Singleton
         private static OperatorEqual instance;
         private OperatorEqual(string Word) { this.Word = Word; priority = 3; }
-        public static OperatorEqual GetInstance(string Word = "=")
+        public static OperatorEqual GetInstance(string Word = "==")
         {
             if (instance == null)
             {
@@ -244,7 +244,7 @@ namespace MagicParser
             }
             else if(leftResult.type == 4 && rightResult.type == 4)
             {
-                if (leftResult.str == rightResult.str) return new ParseCodeResult(true);
+                if (leftResult.str.ToLower() == rightResult.str.ToLower()) return new ParseCodeResult(true);
             }
             else if (leftResult.type != rightResult.type)
             {
@@ -291,7 +291,7 @@ namespace MagicParser
             }
             else if (leftResult.type == 4 && rightResult.type == 4)
             {
-                if (leftResult.str != rightResult.str) return new ParseCodeResult(true);
+                if (leftResult.str.ToLower() != rightResult.str.ToLower()) return new ParseCodeResult(true);
             }
             else if (leftResult.type != rightResult.type)
             {
@@ -546,16 +546,16 @@ namespace MagicParser
         }
     }
     
-    public class OperatorDoesNotContains : Operator
+    public class OperatorDoesNotContain : Operator
     {
         #region Singleton
-        private static OperatorDoesNotContains instance;
-        private OperatorDoesNotContains(string Word) { this.Word = Word; priority = 5; }
-        public static OperatorDoesNotContains GetInstance(string Word = "$hasnot")
+        private static OperatorDoesNotContain instance;
+        private OperatorDoesNotContain(string Word) { this.Word = Word; priority = 5; }
+        public static OperatorDoesNotContain GetInstance(string Word = "$hasnot")
         {
             if (instance == null)
             {
-                instance = new OperatorDoesNotContains(Word.ToLower());
+                instance = new OperatorDoesNotContain(Word.ToLower());
                 list.Add(instance);
             }
             return instance;
@@ -880,7 +880,7 @@ namespace MagicParser
 
         public override ParseCodeResult Execute(Entry entry, string input, int operatorIndex)
         {
-            return new ParseCodeResult(false);
+            return CodeParser.CheckQuotes(entry, input);
         }
     }
 
@@ -889,7 +889,7 @@ namespace MagicParser
         #region Singleton
         private static OperatorNumber instance;
         private OperatorNumber(string Word) { this.Word = Word; priority = 11; }
-        public static OperatorNumber GetInstance(string Word = "\"")
+        public static OperatorNumber GetInstance(string Word = "")
         {
             if (instance == null)
             {

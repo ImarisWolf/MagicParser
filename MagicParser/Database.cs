@@ -429,15 +429,12 @@ namespace MagicParser
             //добавляем группы с дефолтными параметрами для всех карт, которые не были описаны особо
             if (entry.qtyR > 0)
             {
-                Group emptyGroup = new Group(true);
-                emptyGroup.qty = entry.qtyR;
+                Group emptyGroup = new Group(true) { qty = entry.qtyR };
                 separatedGroups.Add(emptyGroup);
             }
             if (entry.qtyF > 0)
             {
-                Group emptyGroup = new Group(true);
-                emptyGroup.qty = entry.qtyF;
-                emptyGroup.foil = true;
+                Group emptyGroup = new Group(true) { qty = entry.qtyF, foil = true };
                 separatedGroups.Add(emptyGroup);
             }
 
