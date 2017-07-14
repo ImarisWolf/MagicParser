@@ -28,116 +28,158 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.textBoxInput = new System.Windows.Forms.TextBox();
-            this.textBoxOutput = new System.Windows.Forms.TextBox();
             this.menuStrip = new System.Windows.Forms.MenuStrip();
-            this.файлToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.новыйToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.открытьToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.сохранитьToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.сохранитьКакToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.FileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.NewToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.OpenToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.SaveToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.SaveAsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.editToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.copyRightPartToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.saveFileDialog = new System.Windows.Forms.SaveFileDialog();
             this.openFileDialog = new System.Windows.Forms.OpenFileDialog();
-            this.buttonGenerate = new System.Windows.Forms.Button();
+            this.InputTextBox = new System.Windows.Forms.RichTextBox();
+            this.OutputTextBox = new System.Windows.Forms.RichTextBox();
+            this.ErrorLogTextBox = new System.Windows.Forms.RichTextBox();
             this.menuStrip.SuspendLayout();
             this.SuspendLayout();
-            // 
-            // textBoxInput
-            // 
-            this.textBoxInput.Location = new System.Drawing.Point(12, 79);
-            this.textBoxInput.Multiline = true;
-            this.textBoxInput.Name = "textBoxInput";
-            this.textBoxInput.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.textBoxInput.Size = new System.Drawing.Size(1133, 290);
-            this.textBoxInput.TabIndex = 1;
-            this.textBoxInput.TextChanged += new System.EventHandler(this.TextBoxInput_TextChanged);
-            // 
-            // textBoxOutput
-            // 
-            this.textBoxOutput.Location = new System.Drawing.Point(1238, 79);
-            this.textBoxOutput.Multiline = true;
-            this.textBoxOutput.Name = "textBoxOutput";
-            this.textBoxOutput.ReadOnly = true;
-            this.textBoxOutput.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.textBoxOutput.Size = new System.Drawing.Size(126, 290);
-            this.textBoxOutput.TabIndex = 2;
             // 
             // menuStrip
             // 
             this.menuStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.файлToolStripMenuItem});
+            this.FileToolStripMenuItem,
+            this.editToolStripMenuItem});
             this.menuStrip.Location = new System.Drawing.Point(0, 0);
             this.menuStrip.Name = "menuStrip";
-            this.menuStrip.Size = new System.Drawing.Size(1441, 24);
+            this.menuStrip.Size = new System.Drawing.Size(784, 24);
             this.menuStrip.TabIndex = 3;
             this.menuStrip.Text = "menuStrip1";
             // 
-            // файлToolStripMenuItem
+            // FileToolStripMenuItem
             // 
-            this.файлToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.новыйToolStripMenuItem,
-            this.открытьToolStripMenuItem,
-            this.сохранитьToolStripMenuItem,
-            this.сохранитьКакToolStripMenuItem});
-            this.файлToolStripMenuItem.Name = "файлToolStripMenuItem";
-            this.файлToolStripMenuItem.Size = new System.Drawing.Size(48, 20);
-            this.файлToolStripMenuItem.Text = "Файл";
+            this.FileToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.NewToolStripMenuItem,
+            this.OpenToolStripMenuItem,
+            this.SaveToolStripMenuItem,
+            this.SaveAsToolStripMenuItem});
+            this.FileToolStripMenuItem.Name = "FileToolStripMenuItem";
+            this.FileToolStripMenuItem.Size = new System.Drawing.Size(37, 20);
+            this.FileToolStripMenuItem.Text = "&File";
             // 
-            // новыйToolStripMenuItem
+            // NewToolStripMenuItem
             // 
-            this.новыйToolStripMenuItem.Name = "новыйToolStripMenuItem";
-            this.новыйToolStripMenuItem.Size = new System.Drawing.Size(153, 22);
-            this.новыйToolStripMenuItem.Text = "Новый";
-            this.новыйToolStripMenuItem.Click += new System.EventHandler(this.НовыйToolStripMenuItem_Click);
+            this.NewToolStripMenuItem.Name = "NewToolStripMenuItem";
+            this.NewToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.N)));
+            this.NewToolStripMenuItem.Size = new System.Drawing.Size(186, 22);
+            this.NewToolStripMenuItem.Text = "&New";
+            this.NewToolStripMenuItem.Click += new System.EventHandler(this.NewToolStripMenuItem_Click);
             // 
-            // открытьToolStripMenuItem
+            // OpenToolStripMenuItem
             // 
-            this.открытьToolStripMenuItem.Name = "открытьToolStripMenuItem";
-            this.открытьToolStripMenuItem.Size = new System.Drawing.Size(153, 22);
-            this.открытьToolStripMenuItem.Text = "Открыть";
-            this.открытьToolStripMenuItem.Click += new System.EventHandler(this.ОткрытьToolStripMenuItem_Click);
+            this.OpenToolStripMenuItem.Name = "OpenToolStripMenuItem";
+            this.OpenToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.O)));
+            this.OpenToolStripMenuItem.Size = new System.Drawing.Size(186, 22);
+            this.OpenToolStripMenuItem.Text = "&Open";
+            this.OpenToolStripMenuItem.Click += new System.EventHandler(this.OpenToolStripMenuItem_Click);
             // 
-            // сохранитьToolStripMenuItem
+            // SaveToolStripMenuItem
             // 
-            this.сохранитьToolStripMenuItem.Name = "сохранитьToolStripMenuItem";
-            this.сохранитьToolStripMenuItem.Size = new System.Drawing.Size(153, 22);
-            this.сохранитьToolStripMenuItem.Text = "Сохранить";
-            this.сохранитьToolStripMenuItem.Click += new System.EventHandler(this.СохранитьToolStripMenuItem_Click);
+            this.SaveToolStripMenuItem.Name = "SaveToolStripMenuItem";
+            this.SaveToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.S)));
+            this.SaveToolStripMenuItem.Size = new System.Drawing.Size(186, 22);
+            this.SaveToolStripMenuItem.Text = "&Save";
+            this.SaveToolStripMenuItem.Click += new System.EventHandler(this.SaveToolStripMenuItem_Click);
             // 
-            // сохранитьКакToolStripMenuItem
+            // SaveAsToolStripMenuItem
             // 
-            this.сохранитьКакToolStripMenuItem.Name = "сохранитьКакToolStripMenuItem";
-            this.сохранитьКакToolStripMenuItem.Size = new System.Drawing.Size(153, 22);
-            this.сохранитьКакToolStripMenuItem.Text = "Сохранить как";
-            this.сохранитьКакToolStripMenuItem.Click += new System.EventHandler(this.СохранитьКакToolStripMenuItem_Click);
+            this.SaveAsToolStripMenuItem.Name = "SaveAsToolStripMenuItem";
+            this.SaveAsToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys)(((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.Shift) 
+            | System.Windows.Forms.Keys.S)));
+            this.SaveAsToolStripMenuItem.Size = new System.Drawing.Size(186, 22);
+            this.SaveAsToolStripMenuItem.Text = "Save &As";
+            this.SaveAsToolStripMenuItem.Click += new System.EventHandler(this.SaveAsToolStripMenuItem_Click);
+            // 
+            // editToolStripMenuItem
+            // 
+            this.editToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.copyRightPartToolStripMenuItem});
+            this.editToolStripMenuItem.Name = "editToolStripMenuItem";
+            this.editToolStripMenuItem.Size = new System.Drawing.Size(39, 20);
+            this.editToolStripMenuItem.Text = "&Edit";
+            // 
+            // copyRightPartToolStripMenuItem
+            // 
+            this.copyRightPartToolStripMenuItem.Name = "copyRightPartToolStripMenuItem";
+            this.copyRightPartToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys)(((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.Shift) 
+            | System.Windows.Forms.Keys.C)));
+            this.copyRightPartToolStripMenuItem.Size = new System.Drawing.Size(239, 22);
+            this.copyRightPartToolStripMenuItem.Text = "&Copy Parsed Text";
+            this.copyRightPartToolStripMenuItem.Click += new System.EventHandler(this.CopyRightPartToolStripMenuItem_Click);
             // 
             // openFileDialog
             // 
             this.openFileDialog.FileName = "openFileDialog";
             // 
-            // buttonGenerate
+            // InputTextBox
             // 
-            this.buttonGenerate.Location = new System.Drawing.Point(107, 375);
-            this.buttonGenerate.Name = "buttonGenerate";
-            this.buttonGenerate.Size = new System.Drawing.Size(75, 23);
-            this.buttonGenerate.TabIndex = 4;
-            this.buttonGenerate.Text = "Generate";
-            this.buttonGenerate.UseVisualStyleBackColor = true;
-            this.buttonGenerate.Click += new System.EventHandler(this.ButtonGenerate_Click);
+            this.InputTextBox.AcceptsTab = true;
+            this.InputTextBox.DetectUrls = false;
+            this.InputTextBox.Font = new System.Drawing.Font("Courier New", 10F);
+            this.InputTextBox.Location = new System.Drawing.Point(12, 27);
+            this.InputTextBox.Name = "InputTextBox";
+            this.InputTextBox.Size = new System.Drawing.Size(380, 472);
+            this.InputTextBox.TabIndex = 1;
+            this.InputTextBox.Text = "";
+            this.InputTextBox.SelectionChanged += new System.EventHandler(this.InputTextBox_SelectionChanged);
+            this.InputTextBox.TextChanged += new System.EventHandler(this.InputTextBox_TextChanged);
+            this.InputTextBox.KeyDown += new System.Windows.Forms.KeyEventHandler(this.InputTextBox_KeyDown);
+            // 
+            // OutputTextBox
+            // 
+            this.OutputTextBox.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.OutputTextBox.DetectUrls = false;
+            this.OutputTextBox.Font = new System.Drawing.Font("Courier New", 10F);
+            this.OutputTextBox.Location = new System.Drawing.Point(392, 27);
+            this.OutputTextBox.Name = "OutputTextBox";
+            this.OutputTextBox.ReadOnly = true;
+            this.OutputTextBox.Size = new System.Drawing.Size(380, 472);
+            this.OutputTextBox.TabIndex = 2;
+            this.OutputTextBox.Text = "";
+            // 
+            // ErrorLogTextBox
+            // 
+            this.ErrorLogTextBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.ErrorLogTextBox.Cursor = System.Windows.Forms.Cursors.Default;
+            this.ErrorLogTextBox.DetectUrls = false;
+            this.ErrorLogTextBox.Font = new System.Drawing.Font("Courier New", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
+            this.ErrorLogTextBox.ForeColor = System.Drawing.Color.Red;
+            this.ErrorLogTextBox.Location = new System.Drawing.Point(12, 505);
+            this.ErrorLogTextBox.Name = "ErrorLogTextBox";
+            this.ErrorLogTextBox.ReadOnly = true;
+            this.ErrorLogTextBox.Size = new System.Drawing.Size(760, 50);
+            this.ErrorLogTextBox.TabIndex = 3;
+            this.ErrorLogTextBox.TabStop = false;
+            this.ErrorLogTextBox.Text = "";
+            this.ErrorLogTextBox.WordWrap = false;
+            this.ErrorLogTextBox.DoubleClick += new System.EventHandler(this.ErrorLogTextBox_DoubleClick);
             // 
             // MainWindow
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1441, 421);
-            this.Controls.Add(this.buttonGenerate);
-            this.Controls.Add(this.textBoxOutput);
-            this.Controls.Add(this.textBoxInput);
+            this.ClientSize = new System.Drawing.Size(784, 562);
+            this.Controls.Add(this.ErrorLogTextBox);
+            this.Controls.Add(this.OutputTextBox);
+            this.Controls.Add(this.InputTextBox);
             this.Controls.Add(this.menuStrip);
             this.MainMenuStrip = this.menuStrip;
+            this.MinimumSize = new System.Drawing.Size(400, 300);
             this.Name = "MainWindow";
             this.Text = "Magic Parser";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.MainWindow_FormClosing);
+            this.Shown += new System.EventHandler(this.MainWindow_Shown);
+            this.Resize += new System.EventHandler(this.MainWindow_Resize);
             this.menuStrip.ResumeLayout(false);
             this.menuStrip.PerformLayout();
             this.ResumeLayout(false);
@@ -146,17 +188,19 @@
         }
 
         #endregion
-        private System.Windows.Forms.TextBox textBoxInput;
-        private System.Windows.Forms.TextBox textBoxOutput;
         private System.Windows.Forms.MenuStrip menuStrip;
-        private System.Windows.Forms.ToolStripMenuItem файлToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem новыйToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem открытьToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem сохранитьToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem сохранитьКакToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem FileToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem NewToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem OpenToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem SaveToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem SaveAsToolStripMenuItem;
         private System.Windows.Forms.SaveFileDialog saveFileDialog;
         private System.Windows.Forms.OpenFileDialog openFileDialog;
-        private System.Windows.Forms.Button buttonGenerate;
+        private System.Windows.Forms.RichTextBox InputTextBox;
+        private System.Windows.Forms.RichTextBox OutputTextBox;
+        private System.Windows.Forms.RichTextBox ErrorLogTextBox;
+        private System.Windows.Forms.ToolStripMenuItem editToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem copyRightPartToolStripMenuItem;
     }
 }
 

@@ -11,23 +11,8 @@ namespace MagicParser
 {
     public class Database //является выгрузкой одного конкретного файла txt
     {
-        private string fileName;
-        public string FileName
-        {
-            get
-            {
-                return fileName;
-            }
-                
-            set
-            {
-                fileName = value;
-                cardList = new List<Entry>();
-                ReadFile();
-            }
-
-        }
-        public bool notesAsIs;
+        public string fileName { get; set; }
+        public bool notesAsIs { get; set; }
         public class Entry
         {
             #region Magic Album original fields
@@ -83,6 +68,7 @@ namespace MagicParser
 
             #region Service fields
             public bool bothFoilAndNonFoil;
+            public int groupID;
             #endregion
         }
         public List<Entry> cardList;
@@ -109,16 +95,20 @@ namespace MagicParser
         }
         
         //Конструкторы
-        public Database(string fileName)
+        public Database(string fileName = null)
         {
-            FileName = fileName;
+            if (fileName != null)
+            {
+                this.fileName = fileName;
+            }
+            notesAsIs = false;
+            cardList = new List<Entry>();
         }
-        public Database(){}
 
         #region Private methods
 
         //Основной метод, считывающий и парсящий выгрузку
-        private void ReadFile()
+        public void ReadFile()
         {
             StreamReader sr = new StreamReader(fileName);
             string currentLine = sr.ReadLine();
@@ -592,5 +582,18 @@ namespace MagicParser
         }
         
         #endregion
+
+        public static Database Merge(List<Database> dbs)
+        {
+            Database mergedDB = new Database();
+            foreach (Database db in dbs)
+            {
+                foreach (Entry card in db.cardList)
+                {
+                    mergedDB.cardList.Add(card);
+                }
+            }
+            return mergedDB;
+        }
     }
 }
