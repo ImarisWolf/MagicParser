@@ -1,8 +1,10 @@
-﻿using MagicParser.Properties;
+﻿using MagicParser.CodeParsing;
+using MagicParser.Properties;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -11,8 +13,12 @@ namespace MagicParser
 {
     public class Database //является выгрузкой одного конкретного файла txt
     {
-        public string fileName { get; set; }
-        public bool notesAsIs { get; set; }
+        public string fileName { get; set; } //Путь к файлу, из которого берётся выгрузка базы
+        public bool notesAsIs { get; set; } //Если указан этот параметр, то при считывании базы комментарии не будут парситься особым образом
+        public static string token; //Текущий токен при парсинге с токенайзером
+        public string errorDescription;
+
+        //Класс, содержащий в себе информацию об одной записи.
         public class Entry
         {
             #region Magic Album original fields
@@ -70,31 +76,64 @@ namespace MagicParser
             public bool bothFoilAndNonFoil;
             public int groupID;
             #endregion
+
+            public Entry() { }
+            public Entry(Entry entry)
+            {
+                FieldInfo[] fields = typeof(Entry).GetFields();
+                foreach (FieldInfo field in fields)
+                {
+                    field.SetValue(this, field.GetValue(entry));
+                }
+            }
+
         }
-        public List<Entry> cardList;
-        public struct Group
+        public List<Entry> cardList { get; set; }
+        public class Parameter
         {
             public int qty;
-            public bool foil;
-            public float dollarRate;
-            public float discount;
-            public string comment;
-            public string grade;
-            public bool bothFoilAndNonFoil;
+            public string type;
 
-            public Group(bool foo)
+            public string comment;
+            public float discount;
+            public float dollarRate;
+            public FieldInfo field;
+            public string fieldValue;
+            public string grade;
+            public string language;
+            public float price;
+            public int priority;
+
+            public float foilPrice;
+            public float nonFoilPrice;
+            public string foilGrade;
+            public string nonFoilGrade;
+            //public bool bothFoilAndNonFoil;
+
+            public Parameter(Entry entry)
             {
                 qty = 0;
-                foil = false;
-                dollarRate = 0;
+                type = "";
+
+                comment = "";
                 discount = 0;
-                comment = null;
-                grade = "";
-                bothFoilAndNonFoil = false;
+                dollarRate = 0;
+                field = null;
+                fieldValue = "";
+                grade = entry.grade;
+                language = entry.language;
+                price = 0;
+                priority = 0;
+                
+                foilPrice = entry.buyPrice;
+                nonFoilPrice = entry.sellPrice;
+                foilGrade = entry.gradeF;
+                nonFoilGrade = entry.gradeR;
+                //bothFoilAndNonFoil = false;
             }
         }
         
-        //Конструкторы
+        //Конструктор
         public Database(string fileName = null)
         {
             if (fileName != null)
@@ -107,33 +146,72 @@ namespace MagicParser
 
         #region Private methods
 
-        //Основной метод, считывающий и парсящий выгрузку
-        public void ReadFile()
+        private void GetToken(Tokenizer t)
         {
-            StreamReader sr = new StreamReader(fileName);
-            string currentLine = sr.ReadLine();
-            //заменяем в шапке все названия с пробелами, чтобы дальше пропарсить нормально
-            currentLine = currentLine.Replace("Buy Price", "BuyPrice");
-            currentLine = currentLine.Replace("Buy Qty", "BuyQty");
-            currentLine = currentLine.Replace("Grade (F)", "GradeF");
-            currentLine = currentLine.Replace("Grade (R)", "GradeR");
-            currentLine = currentLine.Replace("Name (Oracle)", "NameOracle");
-            currentLine = currentLine.Replace("Price (F)", "PriceF");
-            currentLine = currentLine.Replace("Price (R)", "PriceR");
-            currentLine = currentLine.Replace("Qty (F)", "QtyF");
-            currentLine = currentLine.Replace("Qty (R)", "QtyR");
-            currentLine = currentLine.Replace("Sell Price", "SellPrice");
-            currentLine = currentLine.Replace("Sell Qty", "SellQty");
-            currentLine = currentLine.Replace("Text (Oracle)", "TextOracle");
-            currentLine = currentLine.Replace("Type (Oracle)", "TypeOracle");
+            token = t.GetToken();
+        }
 
-            //делаем шапку
-            List<string> header = MakeHeader(currentLine);
-            ParseFile(sr, header);
-            sr.Close();
+        private string GetNextToken(Tokenizer t)
+        {
+            return t.ForseeToken();
+        }
+
+        private string ErrorExpected(string expected = "", bool quotes = true)
+        {
+            string output = "";
+            if (token != "'") output = "Unexpected token: '" + token + "' .";
+            else output = "Unexpected token: \"" + token + "\" .";
+
+            if (expected != "")
+            {
+                if (quotes) output += " '" + expected + "' expected.";
+                else output += " " + expected + " expected.";
+            }
+            output += " Check your Magic Album file.";
+            return output;
+        }
+
+        private string ErrorQuotes(string whatToDo)
+        {
+            return "Unexpected token: " + token + ". You must " + whatToDo + " in single quotes.";
+        }
+
+        //Основной метод, считывающий и парсящий выгрузку
+        public bool ReadFile()
+        {
+            //try
+            //{
+                StreamReader sr = new StreamReader(fileName);
+                string currentLine = sr.ReadLine();
+                //заменяем в шапке все названия с пробелами, чтобы дальше пропарсить нормально
+                currentLine = currentLine.Replace("Buy Price", "BuyPrice");
+                currentLine = currentLine.Replace("Buy Qty", "BuyQty");
+                currentLine = currentLine.Replace("Grade (F)", "GradeF");
+                currentLine = currentLine.Replace("Grade (R)", "GradeR");
+                currentLine = currentLine.Replace("Name (Oracle)", "NameOracle");
+                currentLine = currentLine.Replace("Price (F)", "PriceF");
+                currentLine = currentLine.Replace("Price (R)", "PriceR");
+                currentLine = currentLine.Replace("Qty (F)", "QtyF");
+                currentLine = currentLine.Replace("Qty (R)", "QtyR");
+                currentLine = currentLine.Replace("Sell Price", "SellPrice");
+                currentLine = currentLine.Replace("Sell Qty", "SellQty");
+                currentLine = currentLine.Replace("Text (Oracle)", "TextOracle");
+                currentLine = currentLine.Replace("Type (Oracle)", "TypeOracle");
+
+                //делаем шапку
+                List<string> header = MakeHeader(currentLine);
+                ParseFile(sr, header);
+                sr.Close();
+
+                //Делаем всё остальное, что необходимо сделать с позициями
+                ResidualParsing();
+                return true;
+            //}
+            //catch
+            //{
+                //return false;
+            //}
             
-            //Делаем всё остальное, что необходимо сделать с позициями
-            ResidualParsing();
         }
 
         //Создание заголовка по строчке
@@ -189,10 +267,8 @@ namespace MagicParser
                 {
                     int symbolsQty = currentLine.Count();
                     int columnWidth = columnHead.Count();
-                    if (columnWidth > symbolsQty)
-                    {
-                        columnWidth = symbolsQty;
-                    }
+                    if (columnWidth > symbolsQty) columnWidth = symbolsQty;
+                    
                     switch (columnHead.Trim())
                     {
                         case "Artist":
@@ -337,197 +413,292 @@ namespace MagicParser
         
         private void ParseEntry(Entry entry)
         {
-            // если есть notes и не стоит флаг не парсить по заметке, то парсим по заметке
-            if (entry.notes != null && entry.notes != "" && !notesAsIs)
-            {
-                ParseNote(entry);
-            }
+            //если есть notes и не стоит флаг 'парсить как есть', то парсим по заметке
+            if (!String.IsNullOrEmpty(entry.notes) && !notesAsIs) ParseNote(entry);
             //если notes отсутствует, то просто разделяем на фойло и не фойло и добавляем
-            else if (entry.qtyR >0 && entry.qtyF > 0) 
-            {
-                ParseFoil(entry);
-
-            }
+            else if (entry.qtyR >0 && entry.qtyF > 0) ParseFoil(entry);
             //если делить нечего, то просто дописываем нужные поля и добавляем
-            else
-            {
-                ParseWithoutComment(entry);
-            }
+            else RewriteQty(entry);
+
+            //(Разделение на фойловые и не фойловые карты происходит внутри парсинга по заметке. Это сделано потому, что в комментарии к записи может быть параметр, общий для обоих типов карт)
         }
 
         //Парсит по комментарию
-        private void ParseNote (Entry entry)
+        private void ParseNote(Entry entry)
         {
+            //note = [parameter] ((',' | ';') parameter)*['.'];
             string note = entry.notes;
-            //удаляем одну точку в конце, если она есть
-            if (note[note.Count() - 1] == '.') 
-            {
-                note = note.Remove(note.Count() - 1);
-            }
+            //удаляем одну точку в конце, если она есть (потому что я могу её поставить)
+            if (note[note.Count() - 1] == '.') note = note.Remove(note.Count() - 1);
 
-            string[] groupsAsStrings = note.Split(',', ';'); // разбиваем заметку на несколько групп
-            List<Group> allGeneralGroups = new List<Group>(); // список групп, параметры которых применяются ко всем картам
-            List<Group> restGeneralGroups = new List<Group>(); // список групп, параметры которых применяются ко всем только фойловым/нефойловым картам
-            List<Group> separatedGroups = new List<Group>(); // список отдельных друг от друга групп
-
-            //для каждой группы, на которые мы разбили заметку, выполняем парсинг
-            foreach (string g in groupsAsStrings)
+            string[] parametersRaw = note.Split(',', ';'); // разбиваем заметку на несколько групп - параметров
+            //Создаём список параметров для текущей записи
+            List<Parameter> parameters = new List<Parameter>();
+            //parameter = [qty] [type] property+;
+            foreach (string parameterRaw in parametersRaw)
             {
-                string stringInGroup = g.TrimStart(); //будем отрезать куски от группы, разбивая её на подстроки
-                Group currentGroup = new Group(true);
-                while (stringInGroup != "" && stringInGroup != null)
+                Tokenizer t = new Tokenizer(parameterRaw);
+                Parameter par = new Parameter(entry);
+                GetToken(t);
+                //[qty]
+                if (Int32.TryParse(token.Replace('.', ','), out par.qty)) { GetToken(t); }
+                //[type]
+                if (token.ToLower() == "foil") { GetToken(t); par.type = "foil"; }
+                else if (token.ToLower() == "nonfoil" || token.ToLower() == "non-foil") { GetToken(t); par.type = "non-foil"; }
+                else if (token.ToLower() == "foil") { GetToken(t); par.type = "foil"; }
+
+                //property = grade | price | language | dollarRate | discount | comment | priority | field;
+                do
                 {
-                    stringInGroup = stringInGroup.TrimStart();
-                    string wordInGroup = SimpleTextProcessings.CutBefore(ref stringInGroup, ' ');
-                    
-                    //Если в слове есть кавычка, то нужно в слово дописать все остальные слова до следующей кавычки
-                    if (wordInGroup.IndexOf('\"') != -1)
+                    //comment = '"' ?anyText? '"';
+                    if (token == "\"")
                     {
-                        if (stringInGroup != "")
+                        token = t.GetUntil('"');
+                        par.comment = token;
+                        GetToken(t);
+                    }
+                    //discount = ('d' ?number?) | (?number? '%');
+                    else if (token.ToLower() == "d")
+                    {
+                        GetToken(t);
+                        if (token == "-")
                         {
-                            wordInGroup += SimpleTextProcessings.CutBefore(ref stringInGroup, '\"') + "\"";
-                            stringInGroup = stringInGroup.Remove(0, 1);
-                        };
+                            GetToken(t);
+                            if (Regex.IsMatch(token, @"^(?i)\d+(\.\d+)?(?-i)$"))
+                            {
+                                float.TryParse(token.Replace('.', ','), out par.dollarRate);
+                                par.dollarRate = -par.dollarRate;
+                                GetToken(t);
+                            }
+                            else { errorDescription = ErrorExpected(); return; }
+                        }
+                        else { errorDescription = ErrorExpected(); return; }
                     }
-
-                    //парсим слово
-                    ParseWord(wordInGroup, currentGroup);
-                }
-
-                //если количество карт в группе - 0, это общая группа (её свойства воздействую на все карты, не перезаписывая другие указанные свойства)
-                if (currentGroup.qty == 0)
-                {
-                    if (currentGroup.bothFoilAndNonFoil) { allGeneralGroups.Add(currentGroup); }
-                    else { restGeneralGroups.Add(currentGroup); }
-                }
-                //если в количестве группы больше нуля карт, то это отдельная группа, которая воздействует только на карты внутри себя
-                else
-                {
-                    separatedGroups.Add(currentGroup);
-                    if (currentGroup.foil) { entry.qtyF -= currentGroup.qty; }
-                    else { entry.qtyR -= currentGroup.qty; }
-                }
-            }
-
-            if (entry.qtyR < 0 || entry.qtyF < 0)
-            {
-                //возвращаем ошибку - в комментарии указано больше карт, чем в реальном количестве
-                //прекращаем выполнение парсинга, просим исправить
-                //также надо возвращать ошибку, когда bothFoilAndNonFoil == true, но при этом в этой группе указывалось количество карт, либо указывалось foil/non-foil
-            }
-
-            //добавляем группы с дефолтными параметрами для всех карт, которые не были описаны особо
-            if (entry.qtyR > 0)
-            {
-                Group emptyGroup = new Group(true) { qty = entry.qtyR };
-                separatedGroups.Add(emptyGroup);
-            }
-            if (entry.qtyF > 0)
-            {
-                Group emptyGroup = new Group(true) { qty = entry.qtyF, foil = true };
-                separatedGroups.Add(emptyGroup);
-            }
-
-            //создаём записи, перенося данные из групп в порядке приоритета
-            MakeParsedEntries(entry, allGeneralGroups, restGeneralGroups, separatedGroups);
-            
-        }
-
-        //определяет, что делать с одним словом (или данными в кавычках) в комменте
-        private void ParseWord(string wordInGroup, Group currentGroup)
-        {
-            if (Regex.IsMatch(wordInGroup, @"^[1-9]+")) // число
-            {
-                Int32.TryParse(wordInGroup, out currentGroup.qty);
-            }
-            else if (wordInGroup.ToLower() == "foil") // фойло
-            {
-                currentGroup.foil = true;
-            }
-            else if (wordInGroup.ToLower() == "non-foil") // не фойло
-            {
-                currentGroup.foil = false;
-            }
-            else if (wordInGroup.ToLower() == "all") // относится и к фойлу, и не к фойлу
-            {
-                currentGroup.bothFoilAndNonFoil = true;
-            }
-            else if (Regex.IsMatch(wordInGroup.ToLower(), @"^(c|r)([1-9])+(\.([1-9])+)?")) // курс доллара в виде c50 или r35
-            {
-                Single.TryParse(wordInGroup.Substring(1), out currentGroup.dollarRate);
-            }
-            else if (Regex.IsMatch(wordInGroup.ToLower(), @"^d(-)?([1-9])+(\.([1-9])+)?")) // скидка в виде d20 или d-10
-            {
-                Single.TryParse(wordInGroup.Substring(1), out currentGroup.discount);
-            }
-            else if (Regex.IsMatch(wordInGroup, "^\\\"(.)+\\\"")) // запись в кавычках
-            {
-                currentGroup.comment = wordInGroup.Substring(1, wordInGroup.Count() - 2);
-            }
-            else // все остальные случаи (всё, что осталось)
-            {
-                currentGroup.grade = (currentGroup.grade + " " + wordInGroup).TrimStart();
-            }
-        }
-
-        //Создаёт записи, записывает в них информацию из групп в порядке приоритета, добавляет записи
-        private void MakeParsedEntries(Entry entry, List<Group> allGeneralGroups, List<Group> restGeneralGroups, List<Group> separatedGroups)
-        {
-            foreach (Group currentSeparetedGroup in separatedGroups)
-            {
-                Entry parsedEntry = new Entry();
-                parsedEntry = entry;
-                parsedEntry.foil = currentSeparetedGroup.foil;
-                if (parsedEntry.foil)
-                {
-                    parsedEntry.grade = parsedEntry.gradeF;
-                    parsedEntry.price = parsedEntry.sellPrice;
-                }
-                else
-                {
-                    parsedEntry.grade = parsedEntry.gradeR;
-                    parsedEntry.price = parsedEntry.buyPrice;
-                }
-                foreach (Group currentGeneralGroups in allGeneralGroups)
-                {
-                    parsedEntry.dollarRate = currentGeneralGroups.dollarRate;
-                    parsedEntry.discount = currentGeneralGroups.discount;
-                    parsedEntry.comment = currentGeneralGroups.comment;
-                    if (currentGeneralGroups.grade != "") { parsedEntry.grade = currentGeneralGroups.grade; }
-                }
-                foreach (Group currentGeneralGroups in restGeneralGroups)
-                {
-                    if (parsedEntry.foil == currentGeneralGroups.foil)
+                    else if (Regex.IsMatch(token, @"^(?i)d\d+(\.\d+)?(?-i)$"))
                     {
-                        if (currentGeneralGroups.dollarRate != 0) { parsedEntry.dollarRate = currentGeneralGroups.dollarRate; }
-                        if (currentGeneralGroups.discount != 0) { parsedEntry.discount = currentGeneralGroups.discount; }
-                        if (currentGeneralGroups.comment != "") { parsedEntry.comment = currentGeneralGroups.comment; }
-                        if (currentGeneralGroups.grade != "") { parsedEntry.grade = currentGeneralGroups.grade; }
+                        float.TryParse(token.Substring(1).Replace('.', ','), out par.dollarRate);
+                        GetToken(t);
                     }
+                    else if (Regex.IsMatch(token, @"^(?i)\d+(\.\d+)?(?-i)%$"))
+                    {
+                        float.TryParse(token.Substring(0, token.Length - 2).Replace('.', ','), out par.dollarRate);
+                    }
+                    //dollarRate = ('c' | 'r')  ?number?;
+                    else if (Regex.IsMatch(token, @"^(?i)(c|r)\d+(\.\d+)?(?-i)$"))
+                    {
+                        float.TryParse(token.Substring(1).Replace('.', ','), out par.dollarRate);
+                        GetToken(t);
+                    }
+                    //field = '$' ?fieldName? '=' ?anyText?;
+                    else if (token == "$")
+                    {
+                        GetToken(t);
+                        //Проверяем существование поля с таким названием
+                        FieldInfo field = typeof(Entry).GetField(token, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
+                        par.field = field;
+                        if (field != null)
+                        {
+                            GetToken(t);
+                            if (token == "=")
+                            {
+                                GetToken(t);
+                                par.fieldValue = token;
+                                GetToken(t);
+                            }
+                            else { errorDescription = ErrorExpected("="); return; }
+                        }
+                        else { errorDescription = "Wrong field name: " + token + ". Check your Magic Album file."; return; }
+                    }
+                    //grade = 'M' | 'Mint' | 'NM/M' | 'NM-' | 'SP+' | 'SP' | 'SP-' | 'MP' | 'MP/HP' | 'HP';
+                    else if (Regex.IsMatch(token, @"^(?i)M|Mint|NM/M|NM-|SP\+|SP|SP-|MP|MP/HP|HP(?-i)$"))
+                    {
+                        par.grade = token;
+                        GetToken(t);
+                    }
+                    //language = 'English' | 'ENG' | 'Italian' | 'ITA' | 'Korean' | 'KOR' | 'Russian' | 'RUS' | 'Spanish' | 'SPA' | 'French' | 'FRA' | 'Japan' | 'JPN' | 'German' | 'GER' | 'Portuguese' | 'POR' | 'ChineseSimplified' | 'SimplifiedChinese' | 'ZHC' | 'ChineseTraditional' | 'TraditionalChinese' | 'ZHT' | 'Hebrew' | HEB' | 'Arabic' | 'ARA' | 'Latin' | 'LAT' | 'Sanskrit' | 'SAN' | 'AncientGreek' | 'GRK' | 'Phyrexian' | 'PHY';
+                    else if (Regex.IsMatch(token, @"^(?i)English|ENG|Italian|ITA|Korean|KOR|Russian|RUS|Spanish|SPA|French|FRA|Japan|JPN|German|GER|Portuguese|POR|ChineseSimplified|SimplifiedChinese|ZHC|ChineseTraditional|TraditionalChinese|ZHT|Hebrew|HEB|Arabic|ARA|Latin|LAT|Sanskrit|SAN|AncientGreek|GRK|Phyrexian|PHY(?-i)$"))
+                    {
+                        par.language = token;
+                        GetToken(t);
+                    }
+                    //price = 'p' ?number?;
+                    else if (Regex.IsMatch(token, @"^p\d+(\.\d+)?$"))
+                    {
+                        float.TryParse(token.Substring(1).Replace('.', ','), out par.price);
+                        GetToken(t);
+                    }
+                    //priority = 'p' ?number?;
+                    else if (Regex.IsMatch(token, @"^(?i)p\d+(?-i)$"))
+                    {
+                        Int32.TryParse(token.Substring(1), out par.priority);
+                        GetToken(t);
+                    }
+                    else { errorDescription = "Wrong parameter: " + token + ". Check your Magic Album file."; return; }
                 }
-                parsedEntry.qty = currentSeparetedGroup.qty;
-                if (currentSeparetedGroup.dollarRate != 0) { parsedEntry.dollarRate = currentSeparetedGroup.dollarRate; }
-                if (currentSeparetedGroup.discount != 0) { parsedEntry.discount = currentSeparetedGroup.discount; }
-                if (currentSeparetedGroup.comment != "" && currentSeparetedGroup.comment != null) { parsedEntry.comment = currentSeparetedGroup.comment; }
-                if (currentSeparetedGroup.grade != "" && currentSeparetedGroup.grade != null) { parsedEntry.grade = currentSeparetedGroup.grade; }
+                while (!t.endIsReached);
 
-                cardList.Add(parsedEntry);
+                //Корректируем цены и состояния на фойло
+                if (par.type == "foil")
+                {
+                    if (par.price != 0) par.foilPrice = par.price;
+                    if (!String.IsNullOrEmpty(par.grade)) par.foilGrade = par.grade;
+                }
+                else if (par.type == "non-foil" || par.type == "nonfoil" || (par.qty > 0 && par.type == ""))
+                {
+                    if (par.price != 0) par.nonFoilPrice= par.price;
+                    if (!String.IsNullOrEmpty(par.grade)) par.nonFoilGrade = par.grade;
+                }
+                else //qty = 0, type = ""
+                {
+                    if (par.price != 0) par.foilPrice = par.price;
+                    if (par.price != 0) par.nonFoilPrice = par.price;
+                    if (!String.IsNullOrEmpty(par.grade)) par.foilGrade = par.grade;
+                    if (!String.IsNullOrEmpty(par.grade)) par.nonFoilGrade = par.grade;
+                }
+
+                parameters.Add(par);
+            }
+
+            //Проверим количество - если карт больше, возвращаем ошибку
+            int qtyF = 0;
+            int qtyR = 0;
+            foreach (Parameter par in parameters)
+            {
+                if (par.type.ToLower() == "foil") qtyF += par.qty;
+                else if (par.type.ToLower() == "non-foil" || par.type.ToLower() == "nonfoil" || par.type.ToLower() == "") qtyR += par.qty;
+            }
+            if (qtyF > entry.qtyF || qtyR > entry.qtyR) { errorDescription = "Wrong cards quantity. Check your Magic Album file."; return; }
+
+            /*
+             * Если количество и типа отсутствуют - параметр применяется ко всем картам.
+             * Затем, если количество отсутствует, но указан тип - параметр применяется ко всем картам указанного типа.
+             * Затем, если количество присутствует, но тип не указан - параметр применяется к qty не-фойловым картам.
+             * Затем, если количество и тип указаны - параметр применяется к qty карт указанного типа.
+            */
+
+            //Если количество и тип отсутствуют...
+            foreach (Parameter par in parameters)
+            {
+                if (par.qty == 0 && par.type.ToLower() == "") SetParameters(entry, par);
+            }
+
+            //Если количество отсутствует, но есть тип...
+            //'Наследуем' два типа записей от базового типа
+            Entry nonFoilEntry = new Entry(entry);
+            Entry foilEntry = new Entry(entry);
+            foreach (Parameter par in parameters)
+            {
+                if (par.qty == 0 && (par.type.ToLower() == "non-foil" || par.type.ToLower() == "nonfoil"))
+                {
+                    SetParameters(nonFoilEntry, par);
+                    nonFoilEntry.foil = false;
+                    nonFoilEntry.grade = nonFoilEntry.gradeR;
+                    nonFoilEntry.price = nonFoilEntry.priceR;
+                }
+                else if (par.qty == 0 && par.type.ToLower() == "foil")
+                {
+                    SetParameters(foilEntry, par);
+                    foilEntry.foil = true;
+                    nonFoilEntry.grade = nonFoilEntry.gradeF;
+                    nonFoilEntry.price = nonFoilEntry.priceF;
+                }
+            }
+
+            //Если количество есть (нет типа = указанный 'non-foil' тип)
+            foreach (Parameter par in parameters)
+            {
+                if (par.qty > 0 && (par.type.ToLower() == "" || par.type.ToLower() == "non-foil" || par.type.ToLower() == "nonfoil"))
+                {
+                    Entry newEntry = new Entry(nonFoilEntry);
+                    newEntry.qty = par.qty;
+                    entry.qtyR -= par.qty; //Уменьшаем счётчик
+                    SetParameters(newEntry, par);
+                    newEntry.foil = false;
+                    newEntry.grade = newEntry.gradeR;
+                    newEntry.price = newEntry.sellPrice;
+                    cardList.Add(newEntry);
+                }
+                else if (par.qty > 0 && par.type.ToLower() == "foil")
+                {
+                    Entry newEntry = new Entry(foilEntry);
+                    newEntry.qty = par.qty;
+                    entry.qtyF -= par.qty; //Уменьшаем счётчик
+                    SetParameters(newEntry, par);
+                    newEntry.foil = true;
+                    newEntry.grade = newEntry.gradeF;
+                    newEntry.price = newEntry.buyPrice;
+                    cardList.Add(newEntry);
+                }
+            }
+
+            //Если ещё остались карты, не обработанные конкретными параметрами - добавляем их как более общие карты в указанных количествах
+            if (entry.qtyR != 0)
+            {
+                nonFoilEntry.qty = entry.qtyR;
+                nonFoilEntry.grade = nonFoilEntry.gradeR;
+                nonFoilEntry.price = nonFoilEntry.sellPrice;
+                cardList.Add(nonFoilEntry);
+            }
+            if (entry.qtyF != 0)
+            {
+                foilEntry.qty = entry.qtyF;
+                foilEntry.grade = foilEntry.gradeF;
+                foilEntry.price = foilEntry.buyPrice;
+                cardList.Add(foilEntry);
             }
         }
 
+        //Настраивает поля записи, в соответствии с входным параметром (без учёта типа - тип учитывается вне этой функции)
+        private void SetParameters(Entry entry, Parameter par)
+        {
+            entry.gradeR = par.nonFoilGrade;
+            entry.gradeF = par.foilGrade;
+            entry.sellPrice = par.nonFoilPrice;
+            entry.buyPrice = par.foilPrice;
+            entry.language = par.language;
+            entry.dollarRate = par.dollarRate;
+            entry.discount = par.discount;
+            entry.comment = par.comment;
+            entry.priority = par.priority;
+            if (par.field != null)
+            {
+                if (par.field.GetValue(entry).GetType() == typeof(bool))
+                {
+                    bool val;
+                    if (par.fieldValue.ToLower() == "true" || par.fieldValue.ToLower() == "1") val = true;
+                    else if (par.fieldValue.ToLower() == "false" || par.fieldValue.ToLower() == "0") val = false;
+                    else { errorDescription = "Failed to parse the value to bool: " + token + ". Check your Magic Album file."; return; }
+                    par.field.SetValue(entry, val);
+                }
+                else if (par.field.GetValue(entry).GetType() == typeof(int))
+                {
+                    int val;
+                    if (Int32.TryParse(par.fieldValue, out val)) par.field.SetValue(entry, val);
+                    else { errorDescription = "Failed to parse the value to int: " + token + ". Check your Magic Album file."; return; }
+                }
+                else if (par.field.GetValue(entry).GetType() == typeof(float))
+                {
+                    float val;
+                    if (float.TryParse(par.fieldValue, out val)) par.field.SetValue(entry, val);
+                    else { errorDescription = "Failed to parse the value to float: " + token + ". Check your Magic Album file."; return; }
+                }
+                else if (par.field.GetValue(entry).GetType() == typeof(string))
+                {
+                    par.field.SetValue(entry, par.fieldValue);
+                }
+                else { errorDescription = "Very strange error: wrong typeof() in sorting. You should debug it. Also, check your Magic Album file."; return; }
+            }
+        }
+        
         //разделяет карту на фойловые и не фойловые и добавляет их
         private void ParseFoil(Entry entry)
         {
-            Entry nonFoilEntry = new Entry();
-            nonFoilEntry = entry;
+            Entry nonFoilEntry = new Entry(entry);
             nonFoilEntry.qty = entry.qtyR;
             nonFoilEntry.grade = entry.gradeR;
             nonFoilEntry.price = entry.sellPrice;
-            if (notesAsIs)
-            {
-                nonFoilEntry.comment = nonFoilEntry.notes;
-                nonFoilEntry.notes = null;
-            }
+            nonFoilEntry.comment = nonFoilEntry.notes;
+            nonFoilEntry.notes = "";
             cardList.Add(nonFoilEntry);
 
             Entry foilEntry = new Entry();
@@ -536,15 +707,12 @@ namespace MagicParser
             foilEntry.qty = entry.qtyF;
             foilEntry.grade = entry.gradeF;
             foilEntry.price = entry.buyPrice;
-            if (notesAsIs)
-            {
-                foilEntry.comment = nonFoilEntry.notes;
-                foilEntry.notes = null;
-            }
+            foilEntry.comment = nonFoilEntry.notes;
+            foilEntry.notes = "";
             cardList.Add(foilEntry);
         }
 
-        private void ParseWithoutComment(Entry entry)
+        private void RewriteQty(Entry entry)
         {
             if (entry.qtyF > 0)
             {
@@ -559,16 +727,13 @@ namespace MagicParser
                 entry.grade = entry.gradeR;
                 entry.price = entry.sellPrice;
             }
-            if (notesAsIs)
-            {
-                entry.comment = entry.notes;
-                entry.notes = null;
-            }
+            entry.comment = entry.notes;
+            entry.notes = "";
             cardList.Add(entry);
         }
 
         //парсит всё оставшееся - переносит поля, чистит лишние поля
-        private void ResidualParsing() 
+        private void ResidualParsing()
         {
             foreach (Entry entry in cardList)
             {

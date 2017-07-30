@@ -161,7 +161,7 @@ namespace MagicParser.CodeParsing
                         {
                             token = t.GetUntil('\'');
                             //path = ?regexp?;
-                            if (Regex.IsMatch(token, @"^(?i)([a-z]+:)?[\\/]([\\/].*)*[\\/]?(?-i)$"))
+                            if (Regex.IsMatch(token, @"^(?i)([a-z]+:)?[\\/]?([\\/].*)*[\\/]?(?-i)$"))
                             {
                                 string DBpath = token;
                                 dbs.Add(DBname, new Database(DBpath));
@@ -233,7 +233,11 @@ namespace MagicParser.CodeParsing
             }
 
             //После определения всех опций про парсинг парсим базы
-            foreach (Database db in currentDBs) db.ReadFile();
+            foreach (Database db in currentDBs)
+            {
+                bool ok = db.ReadFile();
+                if (!ok) { errorDescription = "Can't read file: '" + db.fileName + "'. Make sure the file exists and it contains only text export from Magic Album"; return ""; }
+            }
             //Затем сливаем их
             Database mergedDB = Merge(currentDBs);
 
@@ -430,7 +434,7 @@ namespace MagicParser.CodeParsing
                 List<FieldInfo> fields = new List<FieldInfo>();
                 foreach (string fieldName in element)
                 {
-                    FieldInfo field = typeof(Entry).GetField(fieldName);
+                    FieldInfo field = typeof(Entry).GetField(fieldName, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
                     if (field == null) { errorDescription = "Wrong value name: " + token; return; }
                     fields.Add(field);
                 }
